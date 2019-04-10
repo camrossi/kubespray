@@ -1,0 +1,16 @@
+{#  Since hte interface name might be different I need to use this %s + format syntax to make the variable name #}
+{#  Dynamic so I am sure I am accessing the correct interface mac address. The syntax would be ansibe_ens192 #}
+send dhcp-client-identifier 01:{{hostvars[inventory_hostname]['ansible_%s' | format(target_interface)].macaddress}};
+request subnet-mask, domain-name, domain-name-servers, host-name;
+send host-name {{ansible_hostname}};
+ 
+option rfc3442-classless-static-routes code 121 = array of unsigned integer 8;
+option ms-classless-static-routes code 249 = array of unsigned integer 8;
+option wpad code 252 = string;
+ 
+also request rfc3442-classless-static-routes;
+also request ms-classless-static-routes;
+also request static-routes;
+also request wpad;
+also request ntp-servers;
+timeout 10;

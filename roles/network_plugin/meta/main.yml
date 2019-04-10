@@ -25,6 +25,11 @@ dependencies:
     tags:
       - canal
 
+  - role: network_plugin/aci-cni
+    when: kube_network_plugin == 'aci-cni'
+    tags:
+      - aci-cni
+
   - role: network_plugin/contiv
     when: kube_network_plugin == 'contiv'
     tags:
