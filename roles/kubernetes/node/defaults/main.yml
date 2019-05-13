@@ -42,9 +42,9 @@ kube_master_cpu_reserved: 200m
 
 kubelet_status_update_frequency: 10s
 
-# Requests for nginx load balancer app
-nginx_memory_requests: 32M
-nginx_cpu_requests: 25m
+# Requests for load balancer app
+loadbalancer_apiserver_memory_requests: 32M
+loadbalancer_apiserver_cpu_requests: 25m
 
 # kube_api_runtime_config:
 #   - extensions/v1beta1/daemonsets=true
@@ -126,3 +126,11 @@ vsphere_public_network: "{{ lookup('env', 'VSPHERE_PUBLIC_NETWORK')|default('') 
 # azure_security_group_name:
 # azure_vnet_name:
 # azure_route_table_name:
+# Sku of Load Balancer and Public IP. Candidate values are: basic and standard.
+azure_loadbalancer_sku: basic
+# excludes master nodes from standard load balancer.
+azure_exclude_master_from_standard_lb: true
+# disables the outbound SNAT for public load balancer rules
+azure_disable_outbound_snat: false
+# use instance metadata service where possible
+azure_use_instance_metadata: true

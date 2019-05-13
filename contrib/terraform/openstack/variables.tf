@@ -125,6 +125,11 @@ variable "floatingip_pool" {
   default     = "external"
 }
 
+variable "wait_for_floatingip" {
+  description = "Terraform will poll the instance until the floating IP has been associated."
+  default     = "false"
+}
+
 variable "external_net" {
   description = "uuid of the external/public network"
 }
@@ -141,6 +146,24 @@ variable "supplementary_node_groups" {
 
 variable "bastion_allowed_remote_ips" {
   description = "An array of CIDRs allowed to SSH to hosts"
+  type        = "list"
+  default     = ["0.0.0.0/0"]
+}
+
+variable "master_allowed_remote_ips" {
+  description = "An array of CIDRs allowed to access API of masters"
+  type        = "list"
+  default     = ["0.0.0.0/0"]
+}
+
+variable "k8s_allowed_remote_ips" {
+  description = "An array of CIDRs allowed to SSH to hosts"
+  type        = "list"
+  default     = []
+}
+
+variable "k8s_allowed_egress_ips" {
+  description = "An array of CIDRs allowed for egress traffic"
   type        = "list"
   default     = ["0.0.0.0/0"]
 }
