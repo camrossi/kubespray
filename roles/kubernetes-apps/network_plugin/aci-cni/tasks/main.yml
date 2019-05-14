@@ -1,4 +1,4 @@
 ---
 - name: Start ACI CNI resources
-  command: /usr/local/bin/kubectl apply -f "{{aci_cni_config_file}}"
+  command: /usr/local/bin/kubectl apply -f "{{aci_deployment_yaml_file}}"
   when: inventory_hostname == groups['kube-master'][0]

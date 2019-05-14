@@ -46,6 +46,6 @@ dependencies:
       - multus
 
   - role: kubernetes-apps/network_plugin/aci-cni
-    when: kube_network_plugin == 'aci-cni'
+    when: kube_use_aci
     tags:
       - aci-cni
