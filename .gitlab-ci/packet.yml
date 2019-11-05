@@ -59,17 +59,28 @@ packet_ubuntu-canal-kubeadm:
 packet_ubuntu-flannel-ha:
   stage: deploy-part2
   <<: *packet
-  when: on_success
-
-packet_ubuntu-contiv-sep:
-  stage: deploy-special
-  <<: *packet
   when: manual
+
+# Contiv does not work in k8s v1.16
+# packet_ubuntu-contiv-sep:
+#   stage: deploy-part2
+#   <<: *packet
+#   when: on_success
 
 packet_ubuntu18-cilium-sep:
   stage: deploy-special
   <<: *packet
   when: manual
+
+packet_ubuntu18-flannel-containerd:
+  stage: deploy-part2
+  <<: *packet
+  when: manual
+
+packet_debian9-macvlan-sep:
+  stage: deploy-part2
+  <<: *packet
+  when: on_success
 
 packet_debian9-calico-upgrade:
   stage: deploy-part2
@@ -79,12 +90,17 @@ packet_debian9-calico-upgrade:
 packet_centos7-calico-ha:
   stage: deploy-part2
   <<: *packet
+  when: manual
+
+packet_centos7-kube-ovn:
+  stage: deploy-part2
+  <<: *packet
   when: on_success
 
 packet_centos7-kube-router:
-  stage: deploy-special
+  stage: deploy-part2
   <<: *packet
-  when: manual
+  when: on_success
 
 packet_centos7-multus-calico:
   stage: deploy-part2
@@ -96,7 +112,12 @@ packet_opensuse-canal:
   <<: *packet
   when: manual
 
+packet_oracle-7-canal:
+  stage: deploy-part2
+  <<: *packet
+  when: manual
+
 packet_ubuntu-kube-router-sep:
-  stage: deploy-special
+  stage: deploy-part2
   <<: *packet
   when: manual

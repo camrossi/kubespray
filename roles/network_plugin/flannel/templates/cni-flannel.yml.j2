@@ -37,7 +37,7 @@ data:
       }
     }
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: kube-flannel
@@ -46,15 +46,17 @@ metadata:
     tier: node
     k8s-app: flannel
 spec:
+  selector:
+    matchLabels:
+      tier: node
+      k8s-app: flannel
   template:
     metadata:
       labels:
         tier: node
         k8s-app: flannel
     spec:
-{% if kube_version is version('v1.11.1', '>=') %}
       priorityClassName: system-node-critical
-{% endif %}
       serviceAccountName: flannel
       nodeSelector:
         beta.kubernetes.io/os: linux
@@ -110,6 +112,7 @@ spec:
         - name: host-cni-bin
           mountPath: /host/opt/cni/bin/
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       tolerations:
         - operator: Exists
         # Mark pod as critical for rescheduling (Will have no effect starting with kubernetes 1.12)

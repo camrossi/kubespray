@@ -16,7 +16,7 @@ most modern installs of OpenStack that support the basic services.
 - [ELASTX](https://elastx.se/)
 - [EnterCloudSuite](https://www.entercloudsuite.com/)
 - [FugaCloud](https://fuga.cloud/)
-- [Open Telekom Cloud](https://cloud.telekom.de/) : requires to set the variable `wait_for_floatingip = "true"` in your cluster.tf
+- [Open Telekom Cloud](https://cloud.telekom.de/) : requires to set the variable `wait_for_floatingip = "true"` in your cluster.tfvars
 - [OVH](https://www.ovh.com/)
 - [Rackspace](https://www.rackspace.com/)
 - [Ultimum](https://ultimum.io/)
@@ -69,7 +69,7 @@ binaries available on hyperkube v1.4.3_coreos.0 or higher.
 
 ## Requirements
 
-- [Install Terraform](https://www.terraform.io/intro/getting-started/install.html)
+- [Install Terraform](https://www.terraform.io/intro/getting-started/install.html) 0.12 or later
 - [Install Ansible](http://docs.ansible.com/ansible/latest/intro_installation.html)
 - you already have a suitable OS image in Glance
 - you already have a floating IP pool created
@@ -219,12 +219,14 @@ set OS_PROJECT_DOMAIN_NAME=Default
 The construction of the cluster is driven by values found in
 [variables.tf](variables.tf).
 
-For your cluster, edit `inventory/$CLUSTER/cluster.tf`.
+For your cluster, edit `inventory/$CLUSTER/cluster.tfvars`.
 
 |Variable | Description |
 |---------|-------------|
 |`cluster_name` | All OpenStack resources will use the Terraform variable`cluster_name` (default`example`) in their name to make it easier to track. For example the first compute resource will be named`example-kubernetes-1`. |
+|`az_list` | List of Availability Zones available in your OpenStack cluster. |
 |`network_name` | The name to be given to the internal network that will be generated |
+|`network_dns_domain` | (Optional) The dns_domain for the internal network that will be generated |
 |`dns_nameservers`| An array of DNS name server names to be used by hosts in the internal subnet. |
 |`floatingip_pool` | Name of the pool from which floating IPs will be allocated |
 |`external_net` | UUID of the external network that will be routed to |
@@ -246,6 +248,11 @@ For your cluster, edit `inventory/$CLUSTER/cluster.tf`.
 |`k8s_allowed_remote_ips` | List of CIDR allowed to initiate a SSH connection, empty by default |
 |`worker_allowed_ports` | List of ports to open on worker nodes, `[{ "protocol" = "tcp", "port_range_min" = 30000, "port_range_max" = 32767, "remote_ip_prefix" = "0.0.0.0/0"}]` by default |
 |`wait_for_floatingip` | Let Terraform poll the instance until the floating IP has been associated, `false` by default. |
+|`node_root_volume_size_in_gb` | Size of the root volume for nodes, 0 to use ephemeral storage |
+|`master_root_volume_size_in_gb` | Size of the root volume for masters, 0 to use ephemeral storage |
+|`gfs_root_volume_size_in_gb` | Size of the root volume for gluster, 0 to use ephemeral storage |
+|`etcd_root_volume_size_in_gb` | Size of the root volume for etcd nodes, 0 to use ephemeral storage |
+|`bastion_root_volume_size_in_gb` | Size of the root volume for bastions, 0 to use ephemeral storage |
 
 #### Terraform state files
 
@@ -276,7 +283,7 @@ This should finish fairly quickly telling you Terraform has successfully initial
 You can apply the Terraform configuration to your cluster with the following command
 issued from your cluster's inventory directory (`inventory/$CLUSTER`):
 ```ShellSession
-$ terraform apply -var-file=cluster.tf ../../contrib/terraform/openstack
+$ terraform apply -var-file=cluster.tfvars ../../contrib/terraform/openstack
 ```
 
 if you chose to create a bastion host, this script will create
@@ -290,7 +297,7 @@ pick it up automatically.
 You can destroy your new cluster with the following command issued from the cluster's inventory directory:
 
 ```ShellSession
-$ terraform destroy -var-file=cluster.tf ../../contrib/terraform/openstack
+$ terraform destroy -var-file=cluster.tfvars ../../contrib/terraform/openstack
 ```
 
 If you've started the Ansible run, it may also be a good idea to do some manual cleanup:
@@ -324,6 +331,30 @@ $ ssh-add ~/.ssh/id_rsa
 ```
 
 If you have deployed and destroyed a previous iteration of your cluster, you will need to clear out any stale keys from your SSH "known hosts" file ( `~/.ssh/known_hosts`).
+
+#### Metadata variables
+
+The [python script](../terraform.py) that reads the
+generated`.tfstate` file to generate a dynamic inventory recognizes
+some variables within a "metadata" block, defined in a "resource"
+block (example):
+
+```
+resource "openstack_compute_instance_v2" "example" {
+    ...
+    metadata {
+        ssh_user = "ubuntu"
+        prefer_ipv6 = true
+	python_bin = "/usr/bin/python3"
+    }
+    ...
+}
+```
+
+As the example shows, these let you define the SSH username for
+Ansible, a Python binary which is needed by Ansible if
+`/usr/bin/python` doesn't exist, and whether the IPv6 address of the
+instance should be preferred over IPv4.
 
 #### Bastion host
 
@@ -390,6 +421,14 @@ kube_network_plugin: flannel
 # resolvconf_mode: docker_dns
 # For Container Linux by CoreOS:
 resolvconf_mode: host_resolvconf
+```
+- Set max amount of attached cinder volume per host (default 256)
+```
+node_volume_attach_limit: 26
+```
+- Disable access_ip, this will make all innternal cluster traffic to be sent over local network when a floating IP is attached (default this value is set to 1)
+```
+use_access_ip: 0
 ```
 
 ### Deploy Kubernetes

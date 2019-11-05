@@ -1,5 +1,6 @@
 ---
-- set_fact:
+- name: set architecture_groups
+  set_fact:
     architecture_groups:
       x86_64: amd64
       aarch64: arm64
@@ -78,3 +79,10 @@
 # state instead of `new`.
 - include_tasks: refresh_config.yml
   when: is_etcd_master
+
+- name: Install etcdctl binary from etcd role
+  include_tasks: install_host.yml
+  vars:
+    etcd_cluster_setup: true
+  when:
+    - etcd_kubeadm_enabled

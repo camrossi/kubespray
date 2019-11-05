@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   labels:
@@ -6,21 +6,20 @@ metadata:
   name: netchecker-agent-hostnet
   namespace: {{ netcheck_namespace }}
 spec:
+  selector:
+    matchLabels:
+      app: netchecker-agent-hostnet
   template:
     metadata:
       name: netchecker-agent-hostnet
       labels:
         app: netchecker-agent-hostnet
     spec:
-      hostNetwork: True
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       nodeSelector:
         beta.kubernetes.io/os: linux
-{% if kube_version is version('v1.6', '>=') %}
-      dnsPolicy: ClusterFirstWithHostNet
-{% endif %}
-{% if kube_version is version('v1.11.1', '>=') %}
       priorityClassName: {% if netcheck_namespace == 'kube-system' %}system-node-critical{% else %}k8s-cluster-critical{% endif %}{{''}}
-{% endif %}
       tolerations:
         - effect: NoSchedule
           operator: Exists

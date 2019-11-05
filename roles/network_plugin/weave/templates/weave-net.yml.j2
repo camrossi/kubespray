@@ -101,7 +101,7 @@ items:
       - kind: ServiceAccount
         name: weave-net
         namespace: kube-system
-  - apiVersion: extensions/v1beta1
+  - apiVersion: apps/v1
     kind: DaemonSet
     metadata:
       name: weave-net
@@ -110,14 +110,15 @@ items:
       namespace: kube-system
     spec:
       minReadySeconds: 5
+      selector:
+        matchLabels:
+          name: weave-net
       template:
         metadata:
           labels:
             name: weave-net
         spec:
-{% if kube_version is version('v1.11.1', '>=') %}
           priorityClassName: system-node-critical
-{% endif %}
           containers:
             - name: weave
               command:
@@ -216,6 +217,7 @@ items:
                 - name: xtables-lock
                   mountPath: /run/xtables.lock
           hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
           hostPID: true
           restartPolicy: Always
           securityContext:

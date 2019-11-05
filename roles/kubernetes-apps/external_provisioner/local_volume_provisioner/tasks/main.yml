@@ -5,7 +5,7 @@
     state: directory
     owner: root
     group: root
-    mode: 0700
+    mode: "{{ local_volume_provisioner_directory_mode }}"
   delegate_to: "{{ item[0] }}"
   with_nested:
     - "{{ groups['k8s-cluster'] }}"
@@ -24,6 +24,7 @@
     local_volume_provisioner_templates:
       - { name: local-volume-provisioner-ns, file: local-volume-provisioner-ns.yml, type: ns }
       - { name: local-volume-provisioner-sa, file: local-volume-provisioner-sa.yml, type: sa }
+      - { name: local-volume-provisioner-clusterrole, file: local-volume-provisioner-clusterrole.yml, type: clusterrole }
       - { name: local-volume-provisioner-clusterrolebinding, file: local-volume-provisioner-clusterrolebinding.yml, type: clusterrolebinding }
       - { name: local-volume-provisioner-cm, file: local-volume-provisioner-cm.yml, type: cm }
       - { name: local-volume-provisioner-ds, file: local-volume-provisioner-ds.yml, type: ds }

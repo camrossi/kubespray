@@ -2,6 +2,12 @@
 # disable upgrade cluster
 upgrade_cluster_setup: false
 
+# Enable kubeadm experimental control plane
+kubeadm_control_plane: false
+
+# Experimental kubeadm etcd deployment mode. Available only for new deployment
+etcd_kubeadm_enabled: false
+
 # An experimental dev/test only dynamic volumes provisioner,
 # for PetSets. Works for kube>=v1.3 only.
 kube_hostpath_dynamic_provisioner: "false"
@@ -34,6 +40,9 @@ kube_scheduler_bind_address: 0.0.0.0
 
 # discovery_timeout modifies the discovery timeout
 discovery_timeout: 5m0s
+
+# Instruct first master to refresh kubeadm token
+kubeadm_refresh_token: true
 
 # audit support
 kubernetes_audit: false
@@ -90,12 +99,8 @@ kube_apiserver_admission_control:
   - ServiceAccount
   - DefaultStorageClass
   - PersistentVolumeClaimResize
-  - >-
-      {%- if kube_version is version('v1.9', '<') -%}
-      GenericAdmissionWebhook
-      {%- else -%}
-      MutatingAdmissionWebhook,ValidatingAdmissionWebhook
-      {%- endif -%}
+  - MutatingAdmissionWebhook
+  - ValidatingAdmissionWebhook
   - ResourceQuota
 
 # 1.10+ admission plugins
@@ -131,15 +136,8 @@ kube_webhook_token_auth: false
 ## Variables for webhook token auth https://kubernetes.io/docs/reference/access-authn-authz/authentication/#webhook-token-authentication
 # kube_webhook_token_auth_url: https://...
 
-## Variables for custom flags
-apiserver_custom_flags: []
-
 # List of the preferred NodeAddressTypes to use for kubelet connections.
 kubelet_preferred_address_types: 'InternalDNS,InternalIP,Hostname,ExternalDNS,ExternalIP'
-
-controller_mgr_custom_flags: []
-
-scheduler_custom_flags: []
 
 ## Extra args for k8s components passing by kubeadm
 kube_kubeadm_apiserver_extra_args: {}

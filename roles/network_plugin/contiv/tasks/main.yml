@@ -56,7 +56,8 @@
       - {name: contiv-netplugin, file: contiv-netplugin.yml, type: daemonset}
   when: inventory_hostname in groups['kube-master']
 
-- set_fact:
+- name: Contiv | Add another manifest if contiv_enable_api_proxy is true
+  set_fact:
     contiv_manifests: |-
       {% set _ = contiv_manifests.append({"name": "contiv-api-proxy", "file": "contiv-api-proxy.yml", "type": "daemonset"}) %}
       {{ contiv_manifests }}
@@ -153,7 +154,7 @@
 
 - name: Contiv | Copy cni plugins
   unarchive:
-    src: "{{ local_release_dir }}/cni-plugins-{{ image_arch }}-{{ cni_version }}.tgz"
+    src: "{{ local_release_dir }}/cni-plugins-linux-{{ image_arch }}-{{ cni_version }}.tgz"
     dest: "/opt/cni/bin"
     mode: 0755
     remote_src: yes

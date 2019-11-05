@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 # This manifest deploys the contiv-ovs pod.
 kind: DaemonSet
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 metadata:
   name: contiv-ovs
   namespace: kube-system
@@ -17,10 +17,9 @@ spec:
       labels:
         k8s-app: contiv-ovs
     spec:
-{% if kube_version is version('v1.11.1', '>=') %}
       priorityClassName: system-node-critical
-{% endif %}
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       hostPID: true
       tolerations:
         - operator: Exists

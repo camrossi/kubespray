@@ -69,7 +69,7 @@ kube_proxy_min_sync_period: 0s
 kube_proxy_sync_period: 30s
 
 # A comma-separated list of CIDR's which the ipvs proxier should not touch when cleaning up IPVS rules.
-kube_proxy_exclude_cidrs: 'null'
+kube_proxy_exclude_cidrs: []
 
 # The ipvs scheduler type when proxy mode is ipvs
 # rr: round-robin
@@ -79,6 +79,10 @@ kube_proxy_exclude_cidrs: 'null'
 # sed: shortest expected delay
 # nq: never queue
 kube_proxy_scheduler: rr
+
+# configure arp_ignore and arp_announce to avoid answering ARP queries from kube-ipvs0 interface
+# must be set to true for MetalLB to work
+kube_proxy_strict_arp: false
 
 # The IP address and port for the metrics server to serve on
 # (set to 0.0.0.0 for all IPv4 interfaces and `::` for all IPv6 interfaces)
@@ -100,10 +104,6 @@ kube_proxy_oom_score_adj: -999
 # portRange is the range of host ports (beginPort-endPort, inclusive) that may be consumed
 # in order to proxy service traffic. If unspecified, 0, or (0-0) then ports will be randomly chosen.
 kube_proxy_port_range: ''
-
-# resourceContainer is the absolute name of the resource-only container to create and run
-# the Kube-proxy in (Default: /kube-proxy).
-kube_proxy_resource_container: /kube-proxy
 
 # udpIdleTimeout is how long an idle UDP connection will be kept open (e.g. '250ms', '2s').
 # Must be greater than 0. Only applicable for proxyMode=userspace.

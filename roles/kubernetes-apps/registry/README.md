@@ -55,7 +55,7 @@ spec:
 
 If, for example, you wanted to use NFS you would just need to change the
 `gcePersistentDisk` block to `nfs`. See
-[here](https://kubernetes.io/docs/user-guide/volumes.md) for more details on volumes.
+[here](https://kubernetes.io/docs/concepts/storage/volumes/) for more details on volumes.
 
 Note that in any case, the storage (in the case the GCE PersistentDisk) must be
 created independently - this is not something Kubernetes manages for you (yet).
@@ -186,7 +186,7 @@ node by creating following daemonset.
 
 <!-- BEGIN MUNGE: EXAMPLE ../../saltbase/salt/kube-registry-proxy/kube-registry-proxy.yaml -->
 ``` yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: kube-registry-proxy
@@ -223,7 +223,7 @@ spec:
 ```
 <!-- END MUNGE: EXAMPLE ../../saltbase/salt/kube-registry-proxy/kube-registry-proxy.yaml -->
 
-When modifying replication-controller, service and daemon-set defintions, take
+When modifying replication-controller, service and daemon-set definitionss, take
 care to ensure *unique* identifiers for the rc-svc couple and the daemon-set.
 Failing to do so will have register the localhost proxy daemon-sets to the
 upstream service. As a result they will then try to proxy themselves, which

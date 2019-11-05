@@ -4,7 +4,8 @@
     path: /run/ostree-booted
   register: ostree
 
-- set_fact:
+- name: set is_atomic
+  set_fact:
     is_atomic: "{{ ostree.stat.exists }}"
 
 - name: gather os specific variables
@@ -103,11 +104,11 @@
     dest: "{{ yum_repo_dir }}/docker.repo"
   when: ansible_distribution == "Fedora" and not is_atomic
 
-- name: Configure docker repository on RedHat/CentOS
+- name: Configure docker repository on RedHat/CentOS/Oracle Linux
   template:
     src: "rh_docker.repo.j2"
     dest: "{{ yum_repo_dir }}/docker.repo"
-  when: ansible_distribution in ["CentOS","RedHat"] and not is_atomic
+  when: ansible_distribution in ["CentOS","RedHat","OracleLinux"] and not is_atomic
 
 - name: check if container-selinux is available
   yum:
@@ -135,7 +136,7 @@
     src: "{{ yum_conf }}"
     dest: "{{ docker_yum_conf }}"
     remote_src: yes
-  when: ansible_distribution in ["CentOS","RedHat"] and not is_atomic
+  when: ansible_distribution in ["CentOS","RedHat","OracleLinux"] and not is_atomic
 
 - name: Edit copy of yum.conf to set obsoletes=0
   lineinfile:
@@ -143,7 +144,7 @@
     state: present
     regexp: '^obsoletes='
     line: 'obsoletes=0'
-  when: ansible_distribution in ["CentOS","RedHat"] and not is_atomic
+  when: ansible_distribution in ["CentOS","RedHat","OracleLinux"] and not is_atomic
 
 - name: ensure docker packages are installed
   action: "{{ docker_package_info.pkg_mgr }}"
@@ -191,13 +192,11 @@
     - ansible_distribution == 'Ubuntu'
 
 # This is required to ensure any apt upgrade will not break kubernetes
-- name: Set docker pin priority to apt_preferences on Debian family
-  template:
-    src: "apt_preferences.d/debian_docker.j2"
-    dest: "/etc/apt/preferences.d/docker"
-    owner: "root"
-    mode: 0644
-  when: not (ansible_os_family in ["CoreOS", "Container Linux by CoreOS", "ClearLinux", "RedHat", "Suse"] or is_atomic)
+- name: Tell Debian hosts not to change the docker version with apt upgrade
+  dpkg_selections:
+    name: docker-ce
+    selection: hold
+  when: ansible_os_family in ["Debian"]
 
 - name: ensure docker started, remove our config if docker start failed and try again
   block:
@@ -235,6 +234,12 @@
         dns_mode != 'none' and
         resolvconf_mode == 'docker_dns' and
         installed_docker_version.stdout is version('1.12', '<')
+
+# Install each plugin using a looped include to make error handling in the included task simpler.
+- include_tasks: docker_plugin.yml
+  loop: "{{ docker_plugins }}"
+  loop_control:
+    loop_var: docker_plugin
 
 - name: Set docker systemd config
   import_tasks: systemd.yml

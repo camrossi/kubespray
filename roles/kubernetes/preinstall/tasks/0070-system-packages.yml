@@ -26,6 +26,21 @@
   when:
     - ansible_distribution == "Fedora"
     - ansible_distribution_major_version|int > 21
+    - ansible_distribution_major_version|int <= 29
+    - not is_atomic
+  changed_when: False
+  tags:
+    - bootstrap-os
+
+- name: Install python3-dnf for latest RedHat versions
+  command: dnf install -y python3-dnf
+  register: dnf_task_result
+  until: dnf_task_result is succeeded
+  retries: 4
+  delay: "{{ retry_stagger | random + 3 }}"
+  when:
+    - ansible_distribution == "Fedora"
+    - ansible_distribution_major_version|int >= 30
     - not is_atomic
   changed_when: False
   tags:
@@ -44,7 +59,7 @@
 
 - name: Update common_required_pkgs with ipvsadm when kube_proxy_mode is ipvs
   set_fact:
-    common_required_pkgs: "{{ common_required_pkgs|default([]) + ['ipvsadm'] }}"
+    common_required_pkgs: "{{ common_required_pkgs|default([]) + ['ipvsadm', 'ipset'] }}"
   when: kube_proxy_mode == 'ipvs'
 
 - name: Install packages requirements

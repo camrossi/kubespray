@@ -1,5 +1,5 @@
 # This manifest deploys the Contiv API Proxy Server on Kubernetes.
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: contiv-api-proxy
@@ -9,6 +9,9 @@ metadata:
 spec:
   updateStrategy:
     type: RollingUpdate
+  selector:
+    matchLabels:
+      k8s-app: contiv-api-proxy
   template:
     metadata:
       name: contiv-api-proxy
@@ -16,12 +19,11 @@ spec:
       labels:
         k8s-app: contiv-api-proxy
     spec:
-{% if kube_version is version('v1.11.1', '>=') %}
       priorityClassName: system-node-critical
-{% endif %}
       # The API proxy must run in the host network namespace so that
       # it isn't governed by policy that would prevent it from working.
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       hostPID: true
       nodeSelector:
         node-role.kubernetes.io/master: ""

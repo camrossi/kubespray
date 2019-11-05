@@ -3,7 +3,7 @@
 # as the Calico CNI plugins and network config on
 # each master and worker node in a Kubernetes cluster.
 kind: DaemonSet
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 metadata:
   name: calico-node
   namespace: kube-system
@@ -25,10 +25,9 @@ spec:
         prometheus.io/port: "{{ calico_felix_prometheusmetricsport }}"
 {% endif %}
     spec:
-{% if kube_version is version('v1.11.1', '>=') %}
       priorityClassName: system-node-critical
-{% endif %}
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       serviceAccountName: calico-node
       tolerations:
         - effect: NoExecute
@@ -43,6 +42,29 @@ spec:
       terminationGracePeriodSeconds: 0
 {% if calico_version is version('v3.4.0', '>=') %}
       initContainers:
+{% if calico_datastore == "kdd" and calico_version is version('v3.6.0', '>=') %}
+        # This container performs upgrade from host-local IPAM to calico-ipam.
+        # It can be deleted if this is a fresh installation, or if you have already
+        # upgraded to use calico-ipam.
+        - name: upgrade-ipam
+          image: {{ calico_cni_image_repo }}:{{ calico_cni_image_tag }}
+          command: ["/opt/cni/bin/calico-ipam", "-upgrade"]
+          env:
+            - name: KUBERNETES_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: CALICO_NETWORKING_BACKEND
+              valueFrom:
+                configMapKeyRef:
+                  name: calico-config
+                  key: calico_backend
+          volumeMounts:
+            - mountPath: /var/lib/cni/networks
+              name: host-local-net-dir
+            - mountPath: /host/opt/cni/bin
+              name: cni-bin-dir
+{% endif %}
         # This container installs the Calico CNI binaries
         # and CNI network config file on each node.
         - name: install-cni
@@ -133,22 +155,27 @@ spec:
             # Use Kubernetes API as the backing datastore.
             - name: DATASTORE_TYPE
               value: "kubernetes"
-  {% if typha_enabled == "true" %}
+{% if typha_enabled %}
             # Typha support: controlled by the ConfigMap.
             - name: FELIX_TYPHAK8SSERVICENAME
               valueFrom:
                 configMapKeyRef:
                   name: calico-config
                   key: typha_service_name
-  {% endif %}
+{% if typha_secure %}
+            - name: FELIX_TYPHACN
+              value: typha-server
+            - name: FELIX_TYPHACAFILE
+              value: /etc/typha-ca/ca.crt
+            - name: FELIX_TYPHACERTFILE
+              value: /etc/typha-client/typha-client.crt
+            - name: FELIX_TYPHAKEYFILE
+              value: /etc/typha-client/typha-client.key
+{% endif %}
+{% endif %}
             # Wait for the datastore.
             - name: WAIT_FOR_DATASTORE
               value: "true"
-            # Set based on the k8s node name.
-            - name: NODENAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
 {% endif %}
             # Choose the backend to use.
             - name: CALICO_NETWORKING_BACKEND
@@ -188,7 +215,7 @@ spec:
 # should be set in etcd before deployment
 #            # Configure the IP Pool from which Pod IPs will be chosen.
 #            - name: CALICO_IPV4POOL_CIDR
-#              value: "192.168.0.0/16"
+#              value: "{{ calico_pool_cidr | default(kube_pods_subnet) }}"
             - name: CALICO_IPV4POOL_IPIP
               value: "{{ calico_ipv4pool_ipip }}"
             # Disable IPv6 on Kubernetes.
@@ -279,6 +306,16 @@ spec:
             - name: xtables-lock
               mountPath: /run/xtables.lock
               readOnly: false
+{% if typha_secure %}
+            - name: typha-client
+              mountPath: /etc/typha-client
+              readOnly: true
+            - name: typha-cacert
+              subPath: ca.crt
+              mountPath: /etc/typha-ca/ca.crt
+              readOnly: true
+{% endif %}
+
       volumes:
         # Used by calico/node.
         - name: lib-modules
@@ -308,6 +345,27 @@ spec:
           hostPath:
             path: /run/xtables.lock
             type: FileOrCreate
+{% if calico_datastore == "kdd" and calico_version is version('v3.6.0', '>=') %}
+        # Mount in the directory for host-local IPAM allocations. This is
+        # used when upgrading from host-local to calico-ipam, and can be removed
+        # if not using the upgrade-ipam init container.
+        - name: host-local-net-dir
+          hostPath:
+            path: /var/lib/cni/networks
+{% endif %}
+{% if typha_enabled and typha_secure %}
+        - name: typha-client
+          secret:
+            secretName: typha-client
+            items:
+               - key: tls.crt
+                 path: typha-client.crt
+               - key: tls.key
+                 path: typha-client.key
+        - name: typha-cacert
+          hostPath:
+            path: "/etc/kubernetes/ssl/"
+{% endif %}
   updateStrategy:
     rollingUpdate:
       maxUnavailable: {{ serial | default('20%') }}
