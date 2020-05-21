@@ -30,7 +30,7 @@ dependencies:
     tags:
       - aci-cni
   - role: network_plugin/cni
-    when: kube_network_plugin == 'cni'
+    when: kube_network_plugin in ['cni', 'cloud']
     tags:
       - cni
 
@@ -53,9 +53,6 @@ dependencies:
     when: kube_network_plugin == 'kube-router'
     tags:
       - kube-router
-
-  - role: network_plugin/cloud
-    when: kube_network_plugin == 'cloud'
 
   - role: network_plugin/multus
     when: kube_network_plugin_multus
